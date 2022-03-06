@@ -1,0 +1,63 @@
+ALTER TABLE pitchdata2008
+ALTER COLUMN game_date TYPE text;
+
+CREATE TABLE allpitches AS
+SELECT pitchdata2008.* FROM pitchdata2008
+UNION
+SELECT pitchdata2009.* FROM pitchdata2009
+UNION
+SELECT pitchdata2010.* FROM pitchdata2010
+UNION
+SELECT pitchdata2011.* FROM pitchdata2011
+UNION
+SELECT pitchdata2012.* FROM pitchdata2012
+UNION
+SELECT pitchdata2013.* FROM pitchdata2013
+UNION
+SELECT pitchdata2014.* FROM pitchdata2014
+UNION
+SELECT pitchdata2015.* FROM pitchdata2015
+UNION
+SELECT pitchdata2016.* FROM pitchdata2016
+UNION
+SELECT pitchdata2017.* FROM pitchdata2017
+UNION
+SELECT pitchdata2018.* FROM pitchdata2018
+UNION
+SELECT pitchdata2019.* FROM pitchdata2019
+UNION
+SELECT pitchdata2020.* FROM pitchdata2020;
+
+CREATE VIEW pitchersb AS
+SELECT pitchernames.*, sbpitch.*
+FROM sbpitch LEFT OUTER JOIN pitchernames
+	ON pitchernames.id = sbpitch.pitcher;
+
+CREATE VIEW maxs AS
+	SELECT *
+	FROM pitchersb
+	WHERE name = 'Max Scherzer';
+
+CREATE TABLE maxsbpitches AS
+SELECT
+	z.*,
+	a.pitch_number,
+	a.pitch_type,
+	a.pitch_name,
+	a.description,
+	a.type_,
+	a.release_pos_x,
+	a.release_pos_y,
+	a.release_pos_z,
+	a.zone_,
+	a.plate_x,
+	a.plate_z,
+	a.balls,
+	a.strikes
+FROM maxs z
+LEFT OUTER JOIN allpitches a
+	ON CAST(a.game_date AS date) = z.date
+		AND a.player_name = z.nameordered
+		AND CAST(a.inning as int) = z.inning
+		AND CAST(a.at_bat_number as int) = z.ab
+		AND CAST(a.pitch_number as int) = z.stolenbasepitchatbat+1;
