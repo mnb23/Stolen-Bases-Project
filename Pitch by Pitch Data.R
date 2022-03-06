@@ -52,11 +52,13 @@ teamname = c(
   'CLE',
   'COL',
   'DET',
-  'FLO', #Until 2011
+  'FLO',
+  #Until 2011
   'HOU',
   'KCA',
   'LAN',
-  'MIA', #2012 Onwards
+  'MIA',
+  #2012 Onwards
   'MIL',
   'MIN',
   'NYA',
@@ -79,7 +81,10 @@ nSteal = data.frame(
   Date = character(),
   pitcher = character(),
   team = character(),
-  stolenBasePitch = integer(),
+  inning = integer(),
+  ab = integer(),
+  stolenBasePitchAtBat = integer(),
+  stolenBasePitchOverall = integer(),
   stringsAsFactors = FALSE
 )
 
@@ -115,8 +120,10 @@ for (year in 2008:2020) {
       homeAway = 2
       
       #Home Team or Away Team (necessary for going through event file)
+      
       for (i in 1:nrow(pitch_by_pitch)) {
         if (pitch_by_pitch$V1[i] == 'id') {
+          ab = 0
           teamGame = substr(pitch_by_pitch$V2[i], 1, 3)
           if (teamGame == team) {
             homeAway = 1
@@ -137,9 +144,9 @@ for (year in 2008:2020) {
         if (pitch_by_pitch$V6[i] == 1 &
             pitch_by_pitch$V4[i] == homeAway) {
           pitcher = pitch_by_pitch$V2[i]
-          pitch_count = 0
-          
-          allPitchers[nrow(allPitchers) + 1, ] = c(pitcher, pitch_by_pitch$V3[i], team)
+          total_pitch_count = 0
+          total_ab_pitch_count = 0
+          allPitchers[nrow(allPitchers) + 1,] = c(pitcher, pitch_by_pitch$V3[i], team)
         }
         
         #Finding Stolen Base
@@ -149,18 +156,29 @@ for (year in 2008:2020) {
           locPeriod = max(unlist(gregexpr(pattern = "\\.", pitch_by_pitch$V6[i])))
           sequence = substr(pitch_by_pitch$V6[i], locPeriod + 1, 1000)
           
-          if (locPeriod != -1) {
+          if (locPeriod == -1) {
+            ab = ab + 1
+          }
+          else if (locPeriod != -1) {
             plays = pitch_by_pitch$V7[i - 1]
             if (str_detect(plays, "SB") &
                 pitch_by_pitch$V3[i] != homeAway) {
-              nSteal[nrow(nSteal) + 1,] = c(dateGame, pitcher, team, pitch_count)
+              nSteal[nrow(nSteal) + 1, ] = c(
+                dateGame,
+                pitcher,
+                team,
+                inning,
+                ab,
+                total_ab_pitch_count,
+                total_pitch_count
+              )
             }
             
           }
-          numPitches = sum(str_count(sequence, pitchCounts))
+          total_ab_pitch_count = sum(str_count(sequence, pitchCounts))
           
           if (pitch_by_pitch$V3[i] != homeAway) {
-            pitch_count = pitch_count + numPitches
+            total_pitch_count = total_pitch_count + total_ab_pitch_count
             
           }
           
@@ -175,13 +193,16 @@ library(plyr)
 
 #Finding Pitcher Names
 
-pitcherNamesDf = count(allPitchers,vars=c('pitcherID','pitcherName','pitcherTeam'))
+pitcherNamesDf = count(allPitchers, vars = c('pitcherID', 'pitcherName', 'pitcherTeam'))
 
-write.csv(nSteal,
-          "/Users/mannyb/Documents/R Workspaces/Baseball Projects/Stolen Base Pitch Number.csv",
-          row.names = FALSE)
+write.csv(
+  nSteal,
+  "/Users/mannyb/Documents/R Workspaces/Baseball Projects/Stolen Base Pitch Number.csv",
+  row.names = FALSE
+)
 
-write.csv(pitcherNamesDf,
-          "/Users/mannyb/Documents/R Workspaces/Baseball Projects/Pitcher Names.csv",
-          row.names = FALSE)
-
+write.csv(
+  pitcherNamesDf,
+  "/Users/mannyb/Documents/R Workspaces/Baseball Projects/Pitcher Names.csv",
+  row.names = FALSE
+)
